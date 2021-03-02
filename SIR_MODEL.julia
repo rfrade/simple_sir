@@ -1,0 +1,85 @@
+using Plots
+
+# used in the functino bellow
+function next_step(M, t, lambda, mu)
+    M[t, 1] = M[t-1, 1] - lambda * M[t-1, 1] * M[t-1, 2]
+    M[t, 2] = M[t-1, 2] * (1 + lambda* M[t-1, 1] - mu)
+    M[t, 3] = mu * M[t-1, 2] + M[t-1, 3]
+    return M
+end
+
+function forecast_mc(M, lambda, mu, t=2)
+    M = next_step(M, t, lambda, mu)
+    t = t + 1
+    if (t <= size(M,1))
+        forecast_mc(M, lambda, mu, t)
+    else
+        return M
+    end
+end
+
+M = zeros(100, 3)
+M[1,:] = [0.99 0.01 0]
+M = forecast_mc(M, 0.25, 0.1)
+plot(M[:,1], label="S")
+plot!(M[:,2], label="I")
+plot!(M[:,3], label="R")
+
+
+function calculate_peak(pi_i, mu, n)
+    lambda_vec = zeros(n)
+    Max = zeros(n)
+    for i=1:n
+        lambda_vec[i] = i/n
+        M = zeros(500, 3)
+        M[1, :] = [1-pi_i pi_i 0]
+        M = forecast_mc(M, lambda_vec[i], mu)
+        sorted = sort(M[:,2])
+        Max[i] = sorted[size(M,1)]
+    end
+    return lambda_vec, Max
+end
+
+pi_i = 0.01
+mu = 0.01
+lambda_vec, Max = calculate_peak(pi_i, mu, 1000)
+plot(lambda_vec,Max, label="Peak of infective people")
+
+
+
+
+function calculate_peak(M, lambda, mu, t=2)
+    M = next_step(M, t, lambda, mu)
+    t = t + 1
+    if (M[t,1] > mu/lambda)
+        print(t)
+        return forecast_threshold(M, lambda, mu, t)
+    else
+        return M[t,2]
+    end
+end
+
+function calculate_peak_list(pi_i, mu, n)
+    lambda_vec = zeros(n)
+    Max = zeros(n)
+    for i=1:n
+        lambda_vec[i] = i/n
+        M = zeros(n, 3)
+        M[1, :] = [1-pi_i pi_i 0]
+        Max[i] = calculate_peak(M, lambda_vec[i], mu)
+    end
+    return lambda_vec, Max
+end
+
+pi_i = 0.01
+mu = 0.1
+lambda_vec, Max = calculate_peak_theshold(pi_i, mu, 1000)
+plot(lambda_vec,Max)
+
+M = zeros(100, 3)
+M[1,:] = [0.99 0.01 0]
+M = forecast_threshold(M, 0.25, 0.1)
+
+plot(M[:,1], label="S")
+plot!(M[:,2], label="I")
+plot!(M[:,3], label="R")
