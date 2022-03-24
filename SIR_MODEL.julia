@@ -1,3 +1,5 @@
+# COMPUTE A SIR-MODEL in Julia using markov chains
+
 using Plots
 
 # used in the functino bellow
